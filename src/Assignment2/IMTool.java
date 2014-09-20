@@ -9,12 +9,13 @@ public class IMTool {
 	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);
 		MyBean myBean = new MyBean();
-
-//		SwingUtilities.invokeLater(new Runnable() {
-//			public void run() {
-//				new EchoBean("Alice", historyBean);
-//			}
-//		});
+		SingleUI alice = new SingleUI("Alice", myBean);
+		SingleUI bob = new SingleUI("Bob", myBean);
+		SingleUI cathy = new SingleUI("Catch", myBean);
+		myBean.addPropertyChangeListener(alice.listeners);
+		myBean.addPropertyChangeListener(bob.listeners);
+		myBean.addPropertyChangeListener(cathy.listeners);
+		
 		String input = "";
 		while (!"quit".equals(input)) {
 			System.out.println("please enter an input line or quit or history");

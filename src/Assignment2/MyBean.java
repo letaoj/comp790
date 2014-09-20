@@ -1,30 +1,23 @@
 package Assignment2;
 
 
+import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyBean {
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-	private SingleUI alice;
-	private SingleUI bob;
-	private SingleUI cathy;
-	
-	public MyBean() {
-		alice = new SingleUI("Alice", this);
-		//bob = new SingleUI("Bob", this);
-		//cathy = new SingleUI("Cathy", this);
-		pcs.addPropertyChangeListener(alice.listeners);
-		//pcs.addPropertyChangeListener(bob.listeners);
-		//pcs.addPropertyChangeListener(cathy.listeners);
-	}
 
 	private ArrayList<String> history = new ArrayList<String>();
 	private ArrayList<Character> topic = new ArrayList<Character>();
 
 	public List<String> getValue() {
 		return history;
+	}
+	
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		pcs.addPropertyChangeListener(listener);
 	}
 
 	public void setValue(String property, String newValue) {
