@@ -2,8 +2,6 @@ package Assignment2;
 
 import util.session.PeerMessageListener;
 import util.tags.ApplicationTags;
-import echo.modular.ListObserver;
-import echo.modular.SimpleList;
 
 public class AnIMClientComposer extends AGUIClientComposer {
 	public static final String DEFAULT_APPLICATION_NAME = ApplicationTags.IM;

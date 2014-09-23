@@ -1,11 +1,7 @@
 package Assignment2;
 
-import im.ListEdit;
-import trace.echo.modular.OperationName;
-import trace.im.ListEditReceived;
 import util.session.CommunicatorSelector;
 import util.session.PeerMessageListener;
-import echo.modular.SimpleList;
 
 public class AListInCoupler<E> implements PeerMessageListener {
 	protected SimpleList<E> list;

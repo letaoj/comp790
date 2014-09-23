@@ -1,6 +1,5 @@
 package Assignment2;
 
-import trace.im.IMTracerSetter;
 import util.annotations.Tags;
 import util.session.ASessionManager;
 import util.tags.ApplicationTags;

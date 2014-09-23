@@ -1,6 +1,5 @@
 package Assignment2;
 
-import echo.modular.ListObserver;
 
 public class AGUIClientComposerAndLauncher {
 	protected AnIMClientComposer anIMClientComposer;

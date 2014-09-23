@@ -3,8 +3,6 @@ package Assignment2;
 import util.annotations.Tags;
 import util.session.Communicator;
 import util.tags.InteractiveTags;
-import echo.modular.ListObserver;
-import echo.modular.SimpleList;
 
 @Tags({ InteractiveTags.INTERACTOR })
 public class GUIInteractor<T> implements ListObserver {

@@ -1,16 +1,10 @@
 package Assignment2;
 
-import im.AListEdit;
-import im.ListEdit;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import trace.echo.modular.OperationName;
-import trace.im.ListEditSent;
 import util.session.Communicator;
 import util.trace.session.AddressedSentMessageInfo;
-import echo.modular.ListObserver;
 
 public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
 		ReplicatedSimpleList<T> {

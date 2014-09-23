@@ -2,13 +2,8 @@ package Assignment2;
 
 import java.util.List;
 
-import trace.echo.ListEditMade;
-import trace.echo.modular.ListEditNotified;
-import trace.echo.modular.OperationName;
 import util.annotations.Tags;
 import util.tags.InteractiveTags;
-import echo.modular.ASimpleList;
-import echo.modular.ListObserver;
 
 @Tags({ InteractiveTags.MODEL })
 public class AModifiedSimpleList<ElementType> extends ASimpleList<ElementType> {

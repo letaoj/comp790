@@ -1,15 +1,9 @@
 package Assignment2;
 
-import trace.echo.ListEditDisplayed;
-import trace.echo.ListEditInput;
-import trace.echo.modular.ListEditObserved;
-import trace.echo.modular.OperationName;
 import util.annotations.Tags;
 import util.session.Communicator;
 import util.tags.ApplicationTags;
 import util.tags.InteractiveTags;
-import echo.modular.ListObserver;
-import echo.modular.SimpleList;
 
 @Tags({ ApplicationTags.IM, InteractiveTags.INTERACTOR })
 public class AnIMInteractor implements ListObserver {
