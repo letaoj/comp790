@@ -1,6 +1,5 @@
 package Assignment2;
 
-
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -21,8 +20,10 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 
+import echo.modular.ListObserver;
+
 @SuppressWarnings("serial")
-public class SingleUI extends JFrame {
+public class UI extends JFrame {
 
 	class Listeners extends Thread implements ActionListener, DocumentListener,
 			PropertyChangeListener {
@@ -44,9 +45,13 @@ public class SingleUI extends JFrame {
 						} else {
 							long diff = System.currentTimeMillis() - prev;
 							if (diff < 3000) {
-								myBean.setValue("status", name + " is typing..");
+								// historyInteractor.setValue("status",
+								// clientName
+								// + " is typing..");
 							} else {
-								myBean.setValue("status", name + " has typed.");
+								// historyInteractor.setValue("status",
+								// clientName
+								// + " has typed.");
 							}
 						}
 					} catch (InterruptedException e) {
@@ -68,7 +73,7 @@ public class SingleUI extends JFrame {
 		@Override
 		public void removeUpdate(DocumentEvent e) {
 			if (e.getDocument().getLength() == 0) {
-				myBean.setValue("status", "");
+				
 				flag = true;
 			}
 		}
@@ -80,15 +85,16 @@ public class SingleUI extends JFrame {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			Object obj = e.getSource();
+			String text = "";
 			if (obj.equals(awareMessage)) {
-				String text = awareMessage.getText();
-				myBean.setValue("history", "[" + name + "]: " + text);
+				text = awareMessage.getText();
 				awareMessage.setText("");
+				historyInteractor.processHistory(text);
 				history.setCaretPosition(history.getDocument().getLength());
 			} else if (obj.equals(message)) {
-				String text = message.getText();
-				myBean.setValue("history", "[" + name + "]: " + text);
+				text = message.getText();
 				message.selectAll();
+				historyInteractor.processHistory(text);
 				history.setCaretPosition(history.getDocument().getLength());
 			}
 		}
@@ -116,6 +122,8 @@ public class SingleUI extends JFrame {
 		}
 	}
 
+	protected AnIMInteractor historyInteractor;
+	protected AnEditorInteractor topicInteractor;
 	protected JPanel p1;
 	protected JPanel p2;
 	protected JPanel p3;
@@ -126,18 +134,41 @@ public class SingleUI extends JFrame {
 	protected JTextField awareMessage;
 	protected Listeners listeners;
 	protected TextField message;
-	private String name;
-	private MyBean myBean;
 
-	public SingleUI(String name, MyBean historyBean) {
+	public UI(ListObserver historyInteractor, ListObserver topicInteractor) {
 		listeners = new Listeners();
-		this.name = name;
-		this.myBean = historyBean;
+		this.historyInteractor = (AnIMInteractor) historyInteractor;
+		this.topicInteractor = (AnEditorInteractor) topicInteractor;
 		initUI();
 	}
 
+	public void changeHistory(String aHistory) {
+		history.append(aHistory + "\n");
+	}
+
+	public void changeStatus(String aStatus) {
+		status.setText(aStatus);
+	}
+
+	public void addTopic(int index, Character input) {
+		try {
+			topic.getDocument().insertString(index, "" + input, null);
+		} catch (BadLocationException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void removeTopic(int index) {
+		try {
+			topic.getDocument().remove(index, 1);
+		} catch (BadLocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	public void initUI() {
-		setTitle("Single-UI IM Tool");
+		setTitle("IM Tool");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
 		setLayout(new GridBagLayout());
@@ -151,25 +182,30 @@ public class SingleUI extends JFrame {
 		p1.setBorder(BorderFactory.createTitledBorder("Topic"));
 		topic = new JTextField();
 		topic.addActionListener(listeners);
+		topic.addPropertyChangeListener(listeners);
 		topic.setEditable(true);
-		topic.addPropertyChangeListener("topic", listeners);
 		topic.getDocument().addDocumentListener(new DocumentListener() {
 
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				try {
-					String text = e.getDocument().getText(0,
-							e.getDocument().getLength());
-					myBean.setValue("topic", text);
+					String text = e.getDocument().getText(e.getOffset(),
+							e.getLength());
+					topicInteractor.processAddTopic(e.getOffset(), text);
 				} catch (BadLocationException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
 
 			@Override
 			public void removeUpdate(DocumentEvent e) {
-
+				try {
+					String text = e.getDocument().getText(e.getOffset(),
+							e.getLength());
+					topicInteractor.processRemoveTopic(e.getOffset(), text);
+				} catch (BadLocationException e1) {
+					e1.printStackTrace();
+				}
 			}
 
 			@Override
@@ -185,16 +221,16 @@ public class SingleUI extends JFrame {
 		p2.setBorder(BorderFactory.createTitledBorder("Status"));
 		status = new JTextField();
 		status.addActionListener(listeners);
+		status.addPropertyChangeListener(listeners);
 		status.setEditable(false);
 		status.setBackground(Color.LIGHT_GRAY);
-		status.addPropertyChangeListener("status", listeners);
 		p2.add(status, c);
 
 		// Setup History Text Area
-		history = new JTextArea(5, 20);
+		history = new JTextArea(10, 20);
 		history.setEditable(false);
+		history.addPropertyChangeListener(listeners);
 		JScrollPane scrollPane = new JScrollPane(history);
-		history.addPropertyChangeListener("history", listeners);
 
 		// Add Aware Message panel
 		p3 = new JPanel(new GridBagLayout());
