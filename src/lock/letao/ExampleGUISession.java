@@ -1,4 +1,4 @@
-package Assignment4;
+package lock.letao;
 
 public interface ExampleGUISession {
 	public static final String SESSION_NAME = "FrostySession";

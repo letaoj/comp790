@@ -1,7 +1,13 @@
-package Assignment4;
+package lock.letao;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyVetoException;
+import java.beans.VetoableChangeListener;
+import java.beans.VetoableChangeSupport;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -26,6 +32,8 @@ public class AReplicatedLockController extends JFrame {
 	protected JButton request;
 	protected JButton release;
 	protected JTextArea history;
+	protected boolean implicit;
+	VetoableChangeSupport vetoChangeSupport = new VetoableChangeSupport(this);
 
 	public AReplicatedLockController() {
 		initController();
@@ -45,6 +53,41 @@ public class AReplicatedLockController extends JFrame {
 		textField = new JTextField();
 		request = new JButton("Request Lock");
 		release = new JButton("Release Lock");
+		implicit = false;
+
+		request.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					vetoChangeSupport.fireVetoableChange("request", null, "");
+				} catch (PropertyVetoException exception) {
+					return;
+				}
+			}
+
+		});
+		release.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					vetoChangeSupport.fireVetoableChange("release", null, "");
+				} catch (PropertyVetoException exception) {
+					return;
+				}
+			}
+
+		});
+
+		checkbox.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				implicit = !implicit;
+			}
+
+		});
 
 		p1.setBorder(BorderFactory.createTitledBorder("Current Lock Holder"));
 		textField.setPreferredSize(new Dimension(150, 20));
@@ -81,7 +124,27 @@ public class AReplicatedLockController extends JFrame {
 		setVisible(true);
 	}
 
+	protected void addVetoableChangeListener(VetoableChangeListener listener) {
+		vetoChangeSupport.addVetoableChangeListener(listener);
+	}
+
+	protected void updateText(String name) {
+		textField.setText(name);
+	}
+
 	public static void main(String[] args) {
 		new AReplicatedLockController();
+	}
+
+	public boolean implicitLock() {
+		return implicit;
+	}
+
+	public void updateLockHistory(List<String> his) {
+		history.setText("");
+		for (String s : his) {
+			history.append(s);
+		}
+		history.setCaretPosition(history.getDocument().getLength());
 	}
 }

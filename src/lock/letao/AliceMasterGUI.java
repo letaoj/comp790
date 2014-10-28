@@ -1,11 +1,14 @@
-package Assignment4;
+package lock.letao;
 
 import trace.locking.LockTracerSetter;
+import util.annotations.Tags;
 import util.session.Communicator;
+import util.tags.ApplicationTags;
 import util.tags.DistributedTags;
 import util.trace.Tracer;
 import util.trace.session.SessionTracerSetter;
 
+@Tags({ DistributedTags.CLIENT_1, ApplicationTags.REPLICATED_WINDOW })
 public class AliceMasterGUI implements ExampleGUISession {
 	public static final String USER_NAME = DistributedTags.CLIENT_1;
 

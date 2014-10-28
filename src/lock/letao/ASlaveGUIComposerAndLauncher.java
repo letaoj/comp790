@@ -1,4 +1,4 @@
-package Assignment4;
+package lock.letao;
 
 import util.awt.AnExtendibleAWTEventQueue;
 import util.session.Communicator;
@@ -9,7 +9,7 @@ public class ASlaveGUIComposerAndLauncher {
 	protected AReplicatedLockController aReplicatedLockController;
 	AnExtendibleAWTEventQueue anExtendibleAWTEventQueue;
 	ListeningInputDistributer listeningInputDistributer;
-	InputController inputController;
+	SlaveInputController inputController;
 	Communicator communicator;
 
 	public void composeAndLaunch(String[] args) {
@@ -18,12 +18,14 @@ public class ASlaveGUIComposerAndLauncher {
 		anExtendibleAWTEventQueue = AnExtendibleAWTEventQueue.getEventQueue();
 		listeningInputDistributer = new ListeningInputDistributer(
 				anExtendibleAWTEventQueue, communicator);
-		inputController = new InputController(communicator);
 		ui = new UI(listeningInputDistributer);
 		aReplicatedLockController = new AReplicatedLockController();
+		inputController = new SlaveInputController(communicator,
+				aReplicatedLockController);
 		listeningInputDistributer.compose();
 		anExtendibleAWTEventQueue
 				.addEventQueueHandler(listeningInputDistributer);
+		aReplicatedLockController.addVetoableChangeListener(inputController);
 		anExtendibleAWTEventQueue.addVetoableChangeListener(inputController);
 		listeningInputDistributer.registerTree(ui);
 	}

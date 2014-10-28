@@ -1,4 +1,4 @@
-package Assignment4;
+package lock.letao;
 
 import java.awt.AWTEvent;
 import java.awt.Component;
@@ -43,6 +43,9 @@ public class ListeningInputDistributer implements AWTEventQueueHandler,
 
 	@Override
 	public void objectReceived(Object message, String userName) {
+		if (message instanceof LockValue) {
+			return;
+		}
 		SerializableAWTEvent aSerializableAWTEvent = (SerializableAWTEvent) message;
 		if (aSerializableAWTEvent.getSource() == null) {
 			return;

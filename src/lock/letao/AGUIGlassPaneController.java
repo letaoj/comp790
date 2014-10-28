@@ -1,4 +1,4 @@
-package Assignment4;
+package lock.letao;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

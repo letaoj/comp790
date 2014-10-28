@@ -1,4 +1,4 @@
-package Assignment4;
+package lock.letao;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -143,7 +143,7 @@ public class UI extends JFrame {
 	public JFrame getController() {
 		return aGUIGlassPaneController.getFrame();
 	}
-
+	
 	public void initUI() {
 		setTitle("Shared Window system");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
