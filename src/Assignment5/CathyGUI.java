@@ -1,25 +1,24 @@
-package lock.letao;
+package Assignment5;
 
-import trace.locking.LockTracerSetter;
+import trace.causal.CausalTracerSetter;
 import util.annotations.Tags;
 import util.session.Communicator;
 import util.tags.ApplicationTags;
 import util.tags.DistributedTags;
 import util.trace.Tracer;
-import util.trace.session.SessionTracerSetter;
 
-@Tags({ DistributedTags.CLIENT_3, ApplicationTags.REPLICATED_WINDOW })
-public class CathySlaveIM implements ExampleGUISession {
+@Tags({ DistributedTags.CLIENT_3, ApplicationTags.IM, ApplicationTags.EDITOR })
+public class CathyGUI implements ExampleGUISession {
 	public static final String USER_NAME = DistributedTags.CLIENT_3;
-	
+
 	public static void main(String[] args) {
 		String[] launcherArgs = { SESSION_SERVER_HOST, SESSION_NAME, USER_NAME,
 				APPLICATION_NAME, Communicator.DIRECT };
-		Tracer.showInfo(true);
-		SessionTracerSetter.setSessionPrintStatus();
-		LockTracerSetter.traceLock();
 
-		(new ASlaveGUIComposerAndLauncher()).composeAndLaunch(launcherArgs);
+		Tracer.showInfo(true);
+		CausalTracerSetter.traceCausal();
+
+		(new AGUIClientComposerAndLauncher()).composeAndLaunch(launcherArgs);
 	}
 
 }

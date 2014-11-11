@@ -1,6 +1,6 @@
-package lock.letao;
+package Assignment5;
 
-import trace.sharedWindow.SharedWindowTracerSetter;
+import trace.im.IMTracerSetter;
 import util.annotations.Tags;
 import util.session.ASessionManager;
 import util.tags.ApplicationTags;
@@ -11,7 +11,7 @@ import util.trace.Tracer;
 import util.trace.session.ServerClientJoined;
 
 @Tags({ DistributedTags.SERVER, DistributedTags.SESSION_MANAGER,
-		ApplicationTags.REPLICATED_WINDOW })
+		ApplicationTags.IM, ApplicationTags.EDITOR })
 public class SessionManagerServerStarter {
 	static ASessionManager server;
 
@@ -20,7 +20,7 @@ public class SessionManagerServerStarter {
 		Tracer.setMessagePrefixKind(MessagePrefixKind.FULL_CLASS_NAME);
 		// Tracer.setKeywordPrintStatus(ServerClientJoined.class, true);
 		Tracer.showInfo(true);
-		SharedWindowTracerSetter.traceSharedWindow();
+		IMTracerSetter.traceIM();
 		Tracer.setKeywordPrintStatus(ServerClientJoined.class, true);
 
 		// SessionTracerSetter.setSessionPrintStatus();

@@ -1,4 +1,4 @@
-package lock.letao;
+package Assignment5;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -6,8 +6,9 @@ import java.awt.GridBagLayout;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -19,14 +20,13 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 
-import trace.sharedWindow.ComponentTreeRegistered;
-import util.awt.AnExtendibleTelePointerGlassPane;
+import echo.modular.ListObserver;
 
 @SuppressWarnings("serial")
 public class UI extends JFrame {
 
-	private class Listeners extends Thread implements ActionListener,
-			DocumentListener {
+	class Listeners extends Thread implements ActionListener, DocumentListener,
+			PropertyChangeListener {
 		private long prev;
 		private boolean flag = true;
 
@@ -45,9 +45,13 @@ public class UI extends JFrame {
 						} else {
 							long diff = System.currentTimeMillis() - prev;
 							if (diff < 3000) {
-								changeStatus("Someone is typing...");
+								// historyInteractor.setValue("status",
+								// clientName
+								// + " is typing..");
 							} else {
-								changeStatus("Someone has typed!");
+								// historyInteractor.setValue("status",
+								// clientName
+								// + " has typed.");
 							}
 						}
 					} catch (InterruptedException e) {
@@ -69,7 +73,7 @@ public class UI extends JFrame {
 		@Override
 		public void removeUpdate(DocumentEvent e) {
 			if (e.getDocument().getLength() == 0) {
-				changeStatus("");
+
 				flag = true;
 			}
 		}
@@ -85,18 +89,41 @@ public class UI extends JFrame {
 			if (obj.equals(awareMessage)) {
 				text = awareMessage.getText();
 				awareMessage.setText("");
+				historyInteractor.processHistory(text);
+				history.setCaretPosition(history.getDocument().getLength());
 			} else if (obj.equals(message)) {
 				text = message.getText();
 				message.selectAll();
+				historyInteractor.processHistory(text);
+				history.setCaretPosition(history.getDocument().getLength());
 			}
-			changeHistory(text);
-			history.setCaretPosition(history.getDocument().getLength());
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void propertyChange(PropertyChangeEvent evt) {
+			String property = evt.getPropertyName();
+			if ("history".equals(property)) {
+				history.setText("");
+				for (String s : (ArrayList<String>) (evt.getNewValue())) {
+					history.append(s + "\n");
+				}
+			} else if ("status".equals(property)) {
+				status.setText((String) evt.getNewValue());
+			} else if ("topic".equals(property)) {
+				StringBuilder sb = new StringBuilder();
+				for (Character c : (ArrayList<Character>) evt.getNewValue()) {
+					sb.append(c);
+				}
+				if (!topic.getText().equals(sb.toString())) {
+					topic.setText(sb.toString());
+				}
+			}
 		}
 	}
 
-	protected AnExtendibleTelePointerGlassPane glassPane;
-	protected AGUIGlassPaneController aGUIGlassPaneController;
-	protected JFrame telePointedFrame;
+	protected AnIMInteractor historyInteractor;
+	protected AnEditorInteractor topicInteractor;
 	protected JPanel p1;
 	protected JPanel p2;
 	protected JPanel p3;
@@ -105,15 +132,14 @@ public class UI extends JFrame {
 	protected JTextField status;
 	protected JTextArea history;
 	protected JTextField awareMessage;
-	protected TextField message;
-	protected TelepointerUtility tele;
 	protected Listeners listeners;
-	protected ListeningInputDistributer listeningInputDistributer;
-	protected boolean flag = true;
+	protected TextField message;
 
-	public UI(ListeningInputDistributer listeningInputDistributer) {
+	public UI(ListObserver historyInteractor, ListObserver topicInteractor) {
+		listeners = new Listeners();
+		this.historyInteractor = (AnIMInteractor) historyInteractor;
+		this.topicInteractor = (AnEditorInteractor) topicInteractor;
 		initUI();
-		this.listeningInputDistributer = listeningInputDistributer;
 	}
 
 	public void changeHistory(String aHistory) {
@@ -136,16 +162,13 @@ public class UI extends JFrame {
 		try {
 			topic.getDocument().remove(index, 1);
 		} catch (BadLocationException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public JFrame getController() {
-		return aGUIGlassPaneController.getFrame();
-	}
-	
 	public void initUI() {
-		setTitle("Shared Window system");
+		setTitle("IM Tool");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
 		setLayout(new GridBagLayout());
@@ -154,19 +177,53 @@ public class UI extends JFrame {
 		c.weightx = 1.0;
 		c.fill = GridBagConstraints.HORIZONTAL;
 
-		listeners = new Listeners();
-
 		// Setup Topic panel
 		p1 = new JPanel(new GridBagLayout());
 		p1.setBorder(BorderFactory.createTitledBorder("Topic"));
 		topic = new JTextField();
+		topic.addActionListener(listeners);
+		topic.addPropertyChangeListener(listeners);
 		topic.setEditable(true);
+		topic.getDocument().addDocumentListener(new DocumentListener() {
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				try {
+					String text = e.getDocument().getText(e.getOffset(),
+							e.getLength());
+					topicInteractor.processAddTopic(e.getOffset(), text);
+				} catch (BadLocationException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				try {
+					int offset = e.getOffset();
+					for (int i = 0; i < e.getLength(); ++i) {
+						topicInteractor.processRemoveTopic(offset, e
+								.getDocument().getText(offset, 1));
+					}
+				} catch (BadLocationException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+
+			}
+
+		});
 		p1.add(topic, c);
 
 		// Add Status panel
 		p2 = new JPanel(new GridBagLayout());
 		p2.setBorder(BorderFactory.createTitledBorder("Status"));
 		status = new JTextField();
+		status.addActionListener(listeners);
+		status.addPropertyChangeListener(listeners);
 		status.setEditable(false);
 		status.setBackground(Color.LIGHT_GRAY);
 		p2.add(status, c);
@@ -174,23 +231,24 @@ public class UI extends JFrame {
 		// Setup History Text Area
 		history = new JTextArea(10, 20);
 		history.setEditable(false);
+		history.addPropertyChangeListener(listeners);
 		JScrollPane scrollPane = new JScrollPane(history);
 
 		// Add Aware Message panel
 		p3 = new JPanel(new GridBagLayout());
 		p3.setBorder(BorderFactory.createTitledBorder("Aware Message"));
 		awareMessage = new JTextField();
-		awareMessage.setEditable(true);
-		awareMessage.getDocument().addDocumentListener(listeners);
 		awareMessage.addActionListener(listeners);
+		awareMessage.getDocument().addDocumentListener(listeners);
+		awareMessage.setEditable(true);
 		p3.add(awareMessage, c);
 
 		// Setup Message panel
 		p4 = new JPanel(new GridBagLayout());
 		p4.setBorder(BorderFactory.createTitledBorder("Message"));
 		message = new TextField();
-		message.setEditable(true);
 		message.addActionListener(listeners);
+		message.setEditable(true);
 		p4.add(message, c);
 
 		// Add contents to the window.
@@ -204,23 +262,6 @@ public class UI extends JFrame {
 		c.weighty = 0.0;
 		add(p3, c);
 		add(p4, c);
-
-		glassPane = new AnExtendibleTelePointerGlassPane(this);
-		aGUIGlassPaneController = new AGUIGlassPaneController(glassPane);
-		glassPane.setGlassPaneController(aGUIGlassPaneController);
-		tele = new TelepointerUtility(glassPane);
-		glassPane.addPainter(tele);
-		glassPane.setVisible(true);
-
-		this.addComponentListener(new ComponentAdapter() {
-			public void componentResized(ComponentEvent e) {
-				if (flag) {
-					flag = false;
-					ComponentTreeRegistered.newCase(e, "0",
-							listeningInputDistributer);
-				}
-			}
-		});
 
 		// Display the window.
 		pack();
