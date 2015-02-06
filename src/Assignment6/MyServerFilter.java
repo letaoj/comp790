@@ -24,7 +24,7 @@ public class MyServerFilter implements ServerMessageFilter {
     OTMessage msg = (OTMessage) message.getUserMessage();
     OTTimeStamp remoteTimeStamp = msg.getOTTimeStamp();
     ListEdit remoteOp = (ListEdit) msg.getMessage();
-    OTTimeStamp.filp(remoteTimeStamp);
+    remoteTimeStamp = OTTimeStamp.filp(remoteTimeStamp);
     OTManager otManager = otManagers.get(message.getSendingUser());
     remoteOp = otManager.transform(remoteOp, remoteTimeStamp);
     System.out.println("remote" + remoteOp.getIndex());
