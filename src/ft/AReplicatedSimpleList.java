@@ -7,17 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import trace.echo.modular.OperationName;
-import trace.ft.MessageWithSequencerNumberReceived;
 import trace.ft.MessageWithSequencerNumberSent;
-import trace.ft.SentRequestSent;
 import trace.im.ListEditSent;
 import util.session.Communicator;
 import util.trace.session.AddressedSentMessageInfo;
 import echo.modular.ListObserver;
+import ft.letao.AFTManager;
 import ft.letao.AMessageWithSeqNum;
 import ft.letao.AMessageWithSeqNumFromSequencer;
+import ft.letao.ARegistry;
 import ft.letao.ASentRequest;
-import ft.letao.AFTManager;
 import ft.letao.FTType;
 import ft.letao.MessageWithSeqNum;
 
@@ -28,22 +27,21 @@ public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
   List<ListObserver<T>> replicatingObservers = new ArrayList<ListObserver<T>>();
   AFTManager ftManager;
 
-  public AReplicatedSimpleList(Communicator communicator, String tag, AFTManager ftManager) {
+  public AReplicatedSimpleList(Communicator communicator, String tag) {
     super(tag);
     this.communicator = communicator;
-    this.ftManager = ftManager;
+    ftManager = (AFTManager) ARegistry.getFTManager(communicator);
   }
 
   public synchronized void replicatedAdd(int index, T element) {
     if (index == -1) {
       index = size();
     }
-    System.out.println(index + "" + element);
     if (communicator == null)
       return;
     ListEdit<T> listEdit = new AListEdit<T>(OperationName.ADD, index, element, tag);
     if (ftManager.isFT()) {
-      ftManager.requestSending(listEdit, ftManager.getFTType());
+      ARegistry.sendRequest(communicator, listEdit, ftManager.getFTType());
     } else {
       ListEditSent.newCase(communicator.getClientName(), listEdit.getOperationName(),
           listEdit.getIndex(), listEdit.getElement(), listEdit.getList(),
@@ -79,8 +77,10 @@ public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
     if (communicator.getClientName().equals(ftManager.getSequencer())) {
       if (aSentRequest.getFTType().equals(FTType.UUB)) {
         ListEdit<T> listEdit = ftManager.upwarpSentRequest(aSentRequest);
+        ftManager.incLocal();
+        ftManager.setA("MessageWithSeqNumFromSequencer Sent!");
         AMessageWithSeqNumFromSequencer message =
-            (AMessageWithSeqNumFromSequencer) ftManager.wrapMessage(listEdit);
+            new AMessageWithSeqNumFromSequencer(ftManager.getLocalSeqNum(), listEdit);
         MessageWithSequencerNumberSent.newCase(communicator.getClientName(), OperationName.ADD,
             listEdit.getIndex(), listEdit.getElement(), tag, aSentRequest.getClientName(), this);
         communicator.toClient(aSentRequest.getClientName(), message);
@@ -94,9 +94,10 @@ public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
     }
   }
 
-  public void UUBtotalOrderAdd(AMessageWithSeqNum msg) {
+  public void UUBtotalOrderAdd(AMessageWithSeqNumFromSequencer message) {
     MessageWithSequencerNumberSent.newCase(communicator.getClientName(), OperationName.ADD,
-        msg.getSeqNum(), msg.getMessage(), tag, AddressedSentMessageInfo.ALL, this);
+        message.getSeqNum(), message.getMessage(), tag, AddressedSentMessageInfo.ALL, this);
+    AMessageWithSeqNum msg = new AMessageWithSeqNum(message.getSeqNum(), message.getMessage());
     communicator.toAll(msg);
   }
 

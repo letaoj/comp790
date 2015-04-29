@@ -6,6 +6,7 @@ import util.tags.ApplicationTags;
 import echo.modular.ListObserver;
 import echo.modular.SimpleList;
 import ft.letao.AFTManager;
+import ft.letao.FTManager;
 
 public class AnIMClientComposer extends AGUIClientComposer {
   public static final String DEFAULT_APPLICATION_NAME = ApplicationTags.IM;
@@ -13,20 +14,22 @@ public class AnIMClientComposer extends AGUIClientComposer {
   protected SimpleList<String> history;
   protected AnIMInteractor interactor;
   protected PeerMessageListener statusInCoupler;
+  protected AFTManager ftManager;
 
-  public AnIMClientComposer(Communicator communicator) {
+  public AnIMClientComposer(Communicator communicator, AFTManager ftManager) {
     this.communicator = communicator;
+    this.ftManager = ftManager;
   }
 
   public String getApplicationName() {
     return DEFAULT_APPLICATION_NAME;
   }
 
-  public void compose(AFTManager faultToleranceManager) {
-    history = new AReplicatedSimpleList<String>(communicator, getApplicationName(), faultToleranceManager);
+  public void compose() {
+    history = new AReplicatedSimpleList<String>(communicator, getApplicationName());
     interactor = new AnIMInteractor(history, communicator);
     history.addObserver(interactor);
-    listInCoupler = new AListInCoupler(getApplicationName(), history);
+    listInCoupler = new AListInCoupler(getApplicationName(), history, ftManager);
     communicator.addPeerMessageListener(listInCoupler);
   }
 

@@ -15,8 +15,8 @@ public class AGUIClientComposer {
   protected Communicator communicator;
   protected PeerMessageListener listInCoupler;
 
-  public Communicator compose(String[] args, AFTManager ftManager) {
-    return communicator = createCommunicator(args, ftManager);
+  public Communicator compose(String[] args) {
+    return communicator = createCommunicator(args);
   }
 
   public void checkArgs(String[] args) {
@@ -28,14 +28,14 @@ public class AGUIClientComposer {
   }
 
   // parameters to factory
-  public Communicator createCommunicator(String args[], AFTManager ftManager) {
+  public Communicator createCommunicator(String args[]) {
     // set factories used to create communicator
-    MessageFilterCreator<ReceivedMessage> receivedMessageCreator =
-        new MyReceivedFilterCreator(ftManager);
-    MessageFilterCreator<SentMessage> sentMessageCreator =
-        new MySentFilterCreator(ftManager);
-    ReceivedMessageFilterSelector.setMessageFilterCreator(receivedMessageCreator);
-    SentMessageFilterSelector.setMessageFilterCreator(sentMessageCreator);
+    // MessageFilterCreator<ReceivedMessage> receivedMessageCreator =
+    // new MyReceivedFilterCreator(ftManager);
+    // MessageFilterCreator<SentMessage> sentMessageCreator =
+    // new MySentFilterCreator(ftManager);
+    // ReceivedMessageFilterSelector.setMessageFilterCreator(receivedMessageCreator);
+    // SentMessageFilterSelector.setMessageFilterCreator(sentMessageCreator);
 
     checkArgs(args);
     if (args.length == 5) {

@@ -1,8 +1,10 @@
 package ft.letao;
 
 import im.ListEdit;
+import util.session.PeerMessageListener;
+import util.session.SessionMessageListener;
 
-public interface FTManager {
+public interface FTManager extends SessionMessageListener, PeerMessageListener {
   SentRequest warpSentRequest(ListEdit<String> listEdit);
 
   ListEdit<String> upwarpSentRequest(SentRequest aSentRequest);
@@ -11,10 +13,7 @@ public interface FTManager {
 
   ListEdit<String> unwarp(MessageWithSeqNum aMessageWithSeqNum);
 
-  void requestSending(ListEdit<String> listEdit, String variant);
-
   void recover(String aClientName);
 
   void reElect();
 }
-

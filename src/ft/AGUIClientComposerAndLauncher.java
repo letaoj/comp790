@@ -3,6 +3,7 @@ package ft;
 import util.session.Communicator;
 import echo.modular.ListObserver;
 import ft.letao.AFTManager;
+import ft.letao.ARegistry;
 
 public class AGUIClientComposerAndLauncher {
   protected AGUIClientComposer aGUIClientComposer;
@@ -16,21 +17,20 @@ public class AGUIClientComposerAndLauncher {
   protected AFTManager ftManager;
 
   public void composeAndLaunch(String[] args) {
-    ftManager = new AFTManager();
-    createCommunicator(args, ftManager);
+    createCommunicator(args);
+    ftManager = (AFTManager) ARegistry.getFTManager(communicator);
 
     communicator.addSessionMessageListener(ftManager);
     communicator.addPeerMessageListener(ftManager);
 
-    anIMClientComposer = new AnIMClientComposer(communicator);
-    anEditorClientComposer = new AnEditorClientComposer(communicator);
-    anIMClientComposer.compose(ftManager);
-    anEditorClientComposer.compose(ftManager);
+    anIMClientComposer = new AnIMClientComposer(communicator, ftManager);
+    anEditorClientComposer = new AnEditorClientComposer(communicator, ftManager);
+    anIMClientComposer.compose();
+    anEditorClientComposer.compose();
     historyInteractor = anIMClientComposer.getInteractor();
     topicInteractor = anEditorClientComposer.getInteractor();
-    ftGUI = new FTGUI(communicator, ftManager);
+    ftGUI = new FTGUI(communicator);
     ftManager.setUI(ftGUI);
-    ftManager.setCommunicator(communicator);
     communicator.join();
     launch();
   }
@@ -39,9 +39,9 @@ public class AGUIClientComposerAndLauncher {
     launchUI();
   }
 
-  private void createCommunicator(String[] args, AFTManager causalityManager) {
+  private void createCommunicator(String[] args) {
     aGUIClientComposer = new AGUIClientComposer();
-    aGUIClientComposer.compose(args, causalityManager);
+    aGUIClientComposer.compose(args);
     communicator = aGUIClientComposer.getCommunicator();
   }
 

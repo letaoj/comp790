@@ -26,6 +26,7 @@ import javax.swing.event.DocumentListener;
 
 import util.session.Communicator;
 import ft.letao.AFTManager;
+import ft.letao.ARegistry;
 import ft.letao.FTType;
 import ft.letao.RecoverHistory;
 
@@ -38,6 +39,7 @@ public class FTGUI extends JFrame {
   protected JPanel p5;
   protected JPanel p6;
   protected JPanel p7;
+  protected JPanel p8;
 
   protected JLabel l1;
   protected JLabel l2;
@@ -45,10 +47,12 @@ public class FTGUI extends JFrame {
   protected JLabel l5;
   protected JLabel l6;
   protected JLabel l7;
+  protected JLabel l8;
 
   protected JTextField peerName;
   protected JTextField minDelay;
   protected JTextField jitter;
+  protected JTextField status;
   protected JButton noJitter;
   protected JButton noDelay;
   protected JButton jb;
@@ -65,10 +69,10 @@ public class FTGUI extends JFrame {
   protected Communicator communicator;
   protected AFTManager ftManager;
 
-  public FTGUI(Communicator communicator, AFTManager ftManager) {
+  public FTGUI(Communicator communicator) {
     initGUI();
     this.communicator = communicator;
-    this.ftManager = ftManager;
+    this.ftManager = (AFTManager) ARegistry.getFTManager(communicator);
     this.addWindowListener(new WindowAdapter() {
       public void windowClosing(WindowEvent e) {
         communicator.leave();
@@ -98,7 +102,10 @@ public class FTGUI extends JFrame {
     p4.add(jb);
     p5.add(cb2);
     p5.add(l5);
+    p5.add(status);
     p7.add(l7);
+    p8.add(l8);
+    p8.add(status);
     p7.add(sequencer);
     p6.add(l6);
     p6.add(jcb);
@@ -108,10 +115,11 @@ public class FTGUI extends JFrame {
     add(p3);
     add(p4);
     add(p5);
+    add(p8);
     add(p7);
     add(p6);
 
-    setSize(440, 280);
+    setSize(440, 320);
     setVisible(true);
 
   }
@@ -124,17 +132,20 @@ public class FTGUI extends JFrame {
     p5 = new JPanel();
     p7 = new JPanel(new GridLayout(1, 2));
     p6 = new JPanel();
+    p8 = new JPanel(new GridLayout(1, 2));
 
     p1.setPreferredSize(new Dimension(350, 30));
     p2.setPreferredSize(new Dimension(350, 30));
     p3.setPreferredSize(new Dimension(350, 30));
-    p7.setPreferredSize(new Dimension(350, 30));
+    p7.setPreferredSize(new Dimension(420, 30));
+    p8.setPreferredSize(new Dimension(420, 30));
 
     l1 = new JLabel("Peer Name: ");
     l2 = new JLabel("Minimum Delay to Peer: ");
     l3 = new JLabel("Delay Variation: ");
     l5 = new JLabel("Total Order");
     l7 = new JLabel("Current Sequencer: ");
+    l8 = new JLabel("Current Status: ");
     l6 = new JLabel("Current Fix Sequencer Variant: ");
 
     j = 0;
@@ -143,6 +154,8 @@ public class FTGUI extends JFrame {
     peerName = new JTextField();
     minDelay = new JTextField(d + "");
     jitter = new JTextField(j + "");
+    status = new JTextField();
+    status.setEditable(false);
     sequencer = new JTextField();
     sequencer.setEditable(false);
     jcb = new JComboBox<String>();
@@ -303,8 +316,12 @@ public class FTGUI extends JFrame {
     }
   }
 
+  public void setAlgorithmStatus(String s) {
+    status.setText(s);
+  }
+
   public static void main(String[] args) {
-    new FTGUI(null, null);
+    new FTGUI(null);
   }
 
 }

@@ -14,16 +14,17 @@ import trace.ft.SentRequestSent;
 import trace.ft.SequencerElected;
 import trace.ft.SequencerReElected;
 import util.Misc;
+import util.models.Hashcodetable;
 import util.session.Communicator;
 import util.session.PeerMessageListener;
 import util.session.SessionMessageListener;
 import ft.FTGUI;
 
-public class AFTManager implements SessionMessageListener, PeerMessageListener, FTManager {
+public class AFTManager implements FTManager {
   int localSeqNum;
   int globalSeqNum;
   boolean ft;
-  String sequencer;
+  static String sequencer;
   String sequencerCandidate;
   Queue<String> clients;
   String ftType;
@@ -31,8 +32,9 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
   int count = 0;
   List<ListEdit> history;
   Communicator communicator;
+  Hashcodetable<Integer, AMessageWithSeqNum> hcm;
 
-  public AFTManager() {
+  public AFTManager(Communicator communicator) {
     globalSeqNum = 0;
     ft = false;
     sequencer = "";
@@ -40,20 +42,19 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
     clients = new PriorityQueue<String>();
     history = new ArrayList<ListEdit>();
     ftType = "Unicast-Broadcast";
-  }
-
-  public void setCommunicator(Communicator communicator) {
+    hcm = new Hashcodetable<Integer, AMessageWithSeqNum>();
     this.communicator = communicator;
   }
 
   @Override
   public void clientJoined(String aClientName, String anApplicationName, String aSessionName,
       boolean isNewSession, boolean isNewApplication, Collection<String> allUsers) {
-    System.out.println("client " + aClientName + " has joined");
+    gui.setAlgorithmStatus("Client " + aClientName + " Joined");
     clients.add(aClientName);
     if (sequencer.equals("") && isNewSession) {
       sequencer = aClientName;
       SequencerElected.newcase(sequencer, aClientName, this);
+      gui.setAlgorithmStatus("Sequencer Elected!");
     } else if (!isNewSession) {
       sequencer = clients.peek();
     }
@@ -70,7 +71,7 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
   @Override
   public void clientLeft(String aClientName, String anApplicationName) {
     clients.remove(aClientName); // remove the client from the client list
-    System.out.println("client " + aClientName + " has left");
+    gui.setAlgorithmStatus("Client " + aClientName + " Left");
     // If the sequencer crash or left, re-elect a new sequencer
     if (aClientName.equals(sequencer))
       reElect();
@@ -79,6 +80,7 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
   public void reElect() {
     // TODO find a more elegant way to elect the sequencer
     sequencer = sequencerCandidate;
+    gui.setAlgorithmStatus("Sequencer Re-electing!");
     for (String s : clients) {
       if (!s.equals(sequencerCandidate)) {
         sequencerCandidate = s;
@@ -86,29 +88,34 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
       }
     }
     gui.setSequencer(sequencer);
+    gui.setAlgorithmStatus("Sequencer Re-elected!");
     SequencerReElected.newcase(sequencer, sequencer, this);
     if (isFT()) {
       gui.refresh();
     }
   }
+  
+  public void setA(String s) {
+    gui.setAlgorithmStatus(s);
+  }
 
-  public void requestSending(ListEdit listEdit, String variant) {
-    SentRequest sendRequest = warpSentRequest(listEdit);
+  public static void requestSending(Communicator communicator, ASentRequest sendRequest, String variant) {
+    ListEdit listEdit = sendRequest.getListEdit();
     switch (variant) {
       case FTType.UB:
         communicator.toClient(getSequencer(), sendRequest);
         SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), this);
+            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), AFTManager.class);
         break;
       case FTType.BB:
         communicator.toAll(sendRequest);
         SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), "ALL", this);
+            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), "ALL", AFTManager.class);
         break;
       case FTType.UUB:
         communicator.toClient(getSequencer(), sendRequest);
         SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), this);
+            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), AFTManager.class);
         break;
       default:
         break;
@@ -148,7 +155,7 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
     this.ft = ft;
   }
 
-  public String getSequencer() {
+  public static String getSequencer() {
     return sequencer;
   }
 
@@ -178,22 +185,35 @@ public class AFTManager implements SessionMessageListener, PeerMessageListener, 
 
   @Override
   public SentRequest warpSentRequest(ListEdit listEdit) {
+    gui.setAlgorithmStatus("SentRequest Sent!");
     return new ASentRequest(communicator.getClientName(), listEdit, ftType);
   }
 
   @Override
   public ListEdit upwarpSentRequest(SentRequest aSentRequest) {
+    gui.setAlgorithmStatus("SentRequest Received!");
     return aSentRequest.getListEdit();
   }
 
   @Override
   public MessageWithSeqNum wrapMessage(ListEdit listEdit) {
     incLocal();
+    gui.setAlgorithmStatus("MessageWithSeqNum Sent!");
     return new AMessageWithSeqNum(localSeqNum, listEdit);
   }
-
+  
   @Override
   public ListEdit unwarp(MessageWithSeqNum aMessageWithSeqNum) {
+    gui.setAlgorithmStatus("MessageWithSeqNum Received!");
     return (ListEdit) aMessageWithSeqNum.getMessage();
   }
+
+  public void bufferMessage(int identityHashCode, AMessageWithSeqNum msg) {
+    hcm.put(identityHashCode, msg);
+  }
+
+  public AMessageWithSeqNum retriveMessage(int identityHashCode) {
+    return hcm.remove(identityHashCode);
+  }
+
 }

@@ -2,21 +2,27 @@ package ft;
 
 import im.ListEdit;
 import trace.echo.modular.OperationName;
+import trace.ft.MessageWithSequencerNumberReceived;
 import trace.ft.SentRequestReceived;
 import trace.im.ListEditReceived;
+import util.models.Hashcodetable;
 import util.session.CommunicatorSelector;
 import util.session.PeerMessageListener;
 import echo.modular.SimpleList;
+import ft.letao.AFTManager;
+import ft.letao.AMessageWithSeqNum;
 import ft.letao.AMessageWithSeqNumFromSequencer;
 import ft.letao.ASentRequest;
 
 public class AListInCoupler<E> implements PeerMessageListener {
   protected SimpleList<E> list;
   protected String tag;
+  protected AFTManager ftManager;
 
-  public AListInCoupler(String tag, SimpleList<E> theEchoer) {
+  public AListInCoupler(String tag, SimpleList<E> theEchoer, AFTManager ftManager) {
     this.tag = tag;
     list = theEchoer;
+    this.ftManager = ftManager;
   }
 
   public void objectReceived(Object message, String userName) {
@@ -27,6 +33,21 @@ public class AListInCoupler<E> implements PeerMessageListener {
       processReceivedListEdit((ListEdit<E>) message, userName);
     } else if (message instanceof AMessageWithSeqNumFromSequencer) {
       processReceivedSeqNum((AMessageWithSeqNumFromSequencer) message, userName);
+    } else if (message instanceof AMessageWithSeqNum) {
+      AMessageWithSeqNum msg = (AMessageWithSeqNum) message;
+      ListEdit listEdit = (ListEdit) ftManager.unwarp(msg);
+      MessageWithSequencerNumberReceived.newCase(userName, OperationName.ADD, listEdit.getIndex(),
+          listEdit.getElement(), listEdit.getList(), userName, this);
+      if (msg.getSeqNum() - 1 == ftManager.getGlobalSeqNum()) {
+        ftManager.incGlobal();
+      } else if (ftManager.getGlobalSeqNum() == msg.getSeqNum()) {
+        // Do nothing, duplicate message
+      } else {
+        ftManager.bufferMessage(System.identityHashCode(msg), msg);
+      }
+      // System.out.println(seqMessage.getMessage());
+      ftManager.addToHistory(listEdit);
+      processReceivedListEdit(listEdit, userName);
     }
   }
 
@@ -34,8 +55,6 @@ public class AListInCoupler<E> implements PeerMessageListener {
     if (!((ListEdit) message.getMessage()).getList().equals(tag)) {
       return;
     }
-    SentRequestReceived.newCase(userName, OperationName.ADD, 0,
-        ((ASentRequest) message.getMessage()).getListEdit().getElement(), tag, userName, this);
     ((AReplicatedSimpleList) list).UUBtotalOrderAdd(message);
   }
 

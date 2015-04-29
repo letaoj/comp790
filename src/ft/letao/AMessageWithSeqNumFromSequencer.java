@@ -1,9 +1,23 @@
 package ft.letao;
 
-public class AMessageWithSeqNumFromSequencer extends AMessageWithSeqNum {
+import java.io.Serializable;
+
+public class AMessageWithSeqNumFromSequencer implements Serializable, MessageWithSeqNum {
+
+  private int seqNum;
+  private Object message;
 
   public AMessageWithSeqNumFromSequencer(int seqNum, Object message) {
-    super(seqNum, message);
+    this.seqNum = seqNum;
+    this.message = message;
+  }
+
+  public int getSeqNum() {
+    return seqNum;
+  }
+
+  public Object getMessage() {
+    return message;
   }
 
 }
