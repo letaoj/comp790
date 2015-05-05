@@ -13,12 +13,13 @@ import util.session.Communicator;
 import util.trace.session.AddressedSentMessageInfo;
 import echo.modular.ListObserver;
 import ft.letao.AFTManager;
+import ft.letao.AMessageWithHashCode;
 import ft.letao.AMessageWithSeqNum;
 import ft.letao.AMessageWithSeqNumFromSequencer;
 import ft.letao.ARegistry;
 import ft.letao.ASentRequest;
 import ft.letao.FTType;
-import ft.letao.MessageWithSeqNum;
+import ft.letao.MessageWithObj;
 
 public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
     ReplicatedSimpleList<T> {
@@ -73,23 +74,32 @@ public class AReplicatedSimpleList<T> extends AModifiedSimpleList<T> implements
     notifyAdd(replicatingObservers, index, newValue);
   }
 
-  public synchronized void UBtotalOrderAdd(ASentRequest<T> aSentRequest) {
+  public synchronized void processSentRequest(ASentRequest<T> aSentRequest) {
+    ListEdit<T> listEdit = ftManager.unwrapSentRequest(aSentRequest);
+    if (aSentRequest.getFTType().equals(FTType.BB)) {
+      ftManager.setAlgorithmStatus("Message buffered!");
+      ftManager.bufferMessage(listEdit);
+    }
     if (communicator.getClientName().equals(ftManager.getSequencer())) {
+      MessageWithObj msg = ftManager.wrapMessage(listEdit, aSentRequest.getFTType());
       if (aSentRequest.getFTType().equals(FTType.UUB)) {
-        ListEdit<T> listEdit = ftManager.upwarpSentRequest(aSentRequest);
-        ftManager.incLocal();
-        ftManager.setA("MessageWithSeqNumFromSequencer Sent!");
-        AMessageWithSeqNumFromSequencer message =
-            new AMessageWithSeqNumFromSequencer(ftManager.getLocalSeqNum(), listEdit);
+        AMessageWithSeqNumFromSequencer message = (AMessageWithSeqNumFromSequencer) msg;
         MessageWithSequencerNumberSent.newCase(communicator.getClientName(), OperationName.ADD,
             listEdit.getIndex(), listEdit.getElement(), tag, aSentRequest.getClientName(), this);
         communicator.toClient(aSentRequest.getClientName(), message);
-      } else {
-        ListEdit<T> listEdit = ftManager.upwarpSentRequest(aSentRequest);
-        MessageWithSeqNum message = ftManager.wrapMessage(listEdit);
+        ftManager.setAlgorithmStatus("SeqNumFromSequencer Sent!");
+      } else if (aSentRequest.getFTType().equals(FTType.UB)) {
+        AMessageWithSeqNum message = (AMessageWithSeqNum) msg;
         MessageWithSequencerNumberSent.newCase(communicator.getClientName(), OperationName.ADD,
             listEdit.getIndex(), listEdit.getElement(), tag, AddressedSentMessageInfo.ALL, this);
         communicator.toAll(message);
+        ftManager.setAlgorithmStatus("MsgWithSeqNum Sent!");
+      } else {
+        AMessageWithHashCode message = (AMessageWithHashCode) msg;
+        MessageWithSequencerNumberSent.newCase(communicator.getClientName(), OperationName.ADD,
+            listEdit.getIndex(), listEdit.getElement(), tag, AddressedSentMessageInfo.ALL, this);
+        communicator.toAll(message);
+        ftManager.setAlgorithmStatus("MsgWithHashCode Sent!");
       }
     }
   }

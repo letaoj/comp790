@@ -2,7 +2,7 @@ package ft.letao;
 
 import java.io.Serializable;
 
-public class AMessageWithSeqNumFromSequencer implements Serializable, MessageWithSeqNum {
+public class AMessageWithSeqNumFromSequencer implements Serializable, MessageWithObj {
 
   private int seqNum;
   private Object message;

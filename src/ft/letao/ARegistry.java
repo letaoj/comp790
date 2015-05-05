@@ -6,19 +6,21 @@ import util.session.Communicator;
 
 public class ARegistry {
 
-  protected static Hashcodetable<Communicator, FTManager> hst =
+  protected static Hashcodetable<Communicator, FTManager> hct =
       new Hashcodetable<Communicator, FTManager>();
 
   public static FTManager getFTManager(Communicator communicator) {
-    if (hst.get(communicator) == null) {
-      hst.put(communicator, new AFTManager(communicator));
+    if (hct.get(communicator) == null) {
+      FTManager ftManager = new AFTManager(communicator);
+      hct.put(communicator, ftManager);
+      communicator.addSessionMessageListener(ftManager);
+      communicator.addPeerMessageListener(ftManager);
     }
-    return hst.get(communicator);
+    return hct.get(communicator);
   }
 
   public static void sendRequest(Communicator communicator, ListEdit listEdit, String variant) {
     AFTManager ftManager = (AFTManager) getFTManager(communicator);
-    ASentRequest aSentRequest = (ASentRequest) ftManager.warpSentRequest(listEdit);
-    AFTManager.requestSending(communicator, aSentRequest, variant);
+    AFTManager.requestSending(communicator, (ASentRequest) ftManager.warpSentRequest(listEdit));
   }
 }

@@ -20,9 +20,6 @@ public class AGUIClientComposerAndLauncher {
     createCommunicator(args);
     ftManager = (AFTManager) ARegistry.getFTManager(communicator);
 
-    communicator.addSessionMessageListener(ftManager);
-    communicator.addPeerMessageListener(ftManager);
-
     anIMClientComposer = new AnIMClientComposer(communicator, ftManager);
     anEditorClientComposer = new AnEditorClientComposer(communicator, ftManager);
     anIMClientComposer.compose();

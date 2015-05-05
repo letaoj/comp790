@@ -306,16 +306,6 @@ public class FTGUI extends JFrame {
     sequencer.setText(ftManager.getSequencer());
   }
 
-  public void recover(String aClientName) {
-    // TODO Auto-generated method stub
-    System.out.println("Starting Recover");
-    if (communicator.getClientName().equals(ftManager.getSequencer())) {
-      for (ListEdit e : ftManager.getHistory()) {
-        communicator.toClient(aClientName, e);
-      }
-    }
-  }
-
   public void setAlgorithmStatus(String s) {
     status.setText(s);
   }

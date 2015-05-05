@@ -1,19 +1,22 @@
 package ft.letao;
 
 import im.ListEdit;
+
+import java.util.Collection;
+
 import util.session.PeerMessageListener;
 import util.session.SessionMessageListener;
 
 public interface FTManager extends SessionMessageListener, PeerMessageListener {
   SentRequest warpSentRequest(ListEdit<String> listEdit);
 
-  ListEdit<String> upwarpSentRequest(SentRequest aSentRequest);
+  ListEdit<String> unwrapSentRequest(SentRequest aSentRequest);
 
-  MessageWithSeqNum wrapMessage(ListEdit<String> listEdit);
-
-  ListEdit<String> unwarp(MessageWithSeqNum aMessageWithSeqNum);
+  MessageWithObj wrapMessage(ListEdit<String> listEdit, String variant);
 
   void recover(String aClientName);
+
+  void electSequencer(String aClientName, boolean isNewSession, Collection<String> allUsers);
 
   void reElect();
 }

@@ -4,6 +4,7 @@ import im.ListEdit;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -14,10 +15,7 @@ import trace.ft.SentRequestSent;
 import trace.ft.SequencerElected;
 import trace.ft.SequencerReElected;
 import util.Misc;
-import util.models.Hashcodetable;
 import util.session.Communicator;
-import util.session.PeerMessageListener;
-import util.session.SessionMessageListener;
 import ft.FTGUI;
 
 public class AFTManager implements FTManager {
@@ -32,7 +30,7 @@ public class AFTManager implements FTManager {
   int count = 0;
   List<ListEdit> history;
   Communicator communicator;
-  Hashcodetable<Integer, AMessageWithSeqNum> hcm;
+  HashSet<ListEdit> hs;
 
   public AFTManager(Communicator communicator) {
     globalSeqNum = 0;
@@ -42,13 +40,17 @@ public class AFTManager implements FTManager {
     clients = new PriorityQueue<String>();
     history = new ArrayList<ListEdit>();
     ftType = "Unicast-Broadcast";
-    hcm = new Hashcodetable<Integer, AMessageWithSeqNum>();
+    hs = new HashSet<ListEdit>();
     this.communicator = communicator;
   }
 
   @Override
   public void clientJoined(String aClientName, String anApplicationName, String aSessionName,
       boolean isNewSession, boolean isNewApplication, Collection<String> allUsers) {
+    electSequencer(aClientName, isNewSession, allUsers);
+  }
+
+  public void electSequencer(String aClientName, boolean isNewSession, Collection<String> allUsers) {
     gui.setAlgorithmStatus("Client " + aClientName + " Joined");
     clients.add(aClientName);
     if (sequencer.equals("") && isNewSession) {
@@ -62,7 +64,6 @@ public class AFTManager implements FTManager {
       Queue<String> tmp = (Queue<String>) Misc.deepCopy(clients);
       tmp.poll();
       sequencerCandidate = tmp.peek();
-      System.out.println("Sequencer Candidate is " + sequencerCandidate);
     }
     if (gui != null)
       gui.setSequencer(sequencer);
@@ -79,8 +80,8 @@ public class AFTManager implements FTManager {
 
   public void reElect() {
     // TODO find a more elegant way to elect the sequencer
-    sequencer = sequencerCandidate;
     gui.setAlgorithmStatus("Sequencer Re-electing!");
+    sequencer = sequencerCandidate;
     for (String s : clients) {
       if (!s.equals(sequencerCandidate)) {
         sequencerCandidate = s;
@@ -94,28 +95,31 @@ public class AFTManager implements FTManager {
       gui.refresh();
     }
   }
-  
-  public void setA(String s) {
+
+  public void setAlgorithmStatus(String s) {
     gui.setAlgorithmStatus(s);
   }
 
-  public static void requestSending(Communicator communicator, ASentRequest sendRequest, String variant) {
+  public static void requestSending(Communicator communicator, ASentRequest sendRequest) {
     ListEdit listEdit = sendRequest.getListEdit();
-    switch (variant) {
+    switch (sendRequest.getFTType()) {
       case FTType.UB:
         communicator.toClient(getSequencer(), sendRequest);
         SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), AFTManager.class);
+            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(),
+            AFTManager.class);
         break;
       case FTType.BB:
         communicator.toAll(sendRequest);
-        SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), "ALL", AFTManager.class);
+        SentRequestSent
+            .newCase(communicator.getClientName(), OperationName.ADD, listEdit.getIndex(),
+                listEdit.getElement(), listEdit.getList(), "ALL", AFTManager.class);
         break;
       case FTType.UUB:
         communicator.toClient(getSequencer(), sendRequest);
         SentRequestSent.newCase(communicator.getClientName(), OperationName.ADD,
-            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(), AFTManager.class);
+            listEdit.getIndex(), listEdit.getElement(), listEdit.getList(), getSequencer(),
+            AFTManager.class);
         break;
       default:
         break;
@@ -123,7 +127,11 @@ public class AFTManager implements FTManager {
   }
 
   public void recover(String aClientName) {
-    gui.recover(aClientName);
+    if (communicator.getClientName().equals(getSequencer())) {
+      for (ListEdit e : getHistory()) {
+        communicator.toClient(aClientName, e);
+      }
+    }
     HistoryRecovered.newcase(aClientName, aClientName, this);
   }
 
@@ -190,30 +198,30 @@ public class AFTManager implements FTManager {
   }
 
   @Override
-  public ListEdit upwarpSentRequest(SentRequest aSentRequest) {
+  public ListEdit unwrapSentRequest(SentRequest aSentRequest) {
     gui.setAlgorithmStatus("SentRequest Received!");
     return aSentRequest.getListEdit();
   }
 
   @Override
-  public MessageWithSeqNum wrapMessage(ListEdit listEdit) {
+  public MessageWithObj wrapMessage(ListEdit listEdit, String variant) {
     incLocal();
-    gui.setAlgorithmStatus("MessageWithSeqNum Sent!");
-    return new AMessageWithSeqNum(localSeqNum, listEdit);
-  }
-  
-  @Override
-  public ListEdit unwarp(MessageWithSeqNum aMessageWithSeqNum) {
-    gui.setAlgorithmStatus("MessageWithSeqNum Received!");
-    return (ListEdit) aMessageWithSeqNum.getMessage();
-  }
-
-  public void bufferMessage(int identityHashCode, AMessageWithSeqNum msg) {
-    hcm.put(identityHashCode, msg);
+    if (variant.equals(FTType.UB)) {
+      return new AMessageWithSeqNum(localSeqNum, listEdit);
+    } else if (variant.equals(FTType.BB)) {
+      return new AMessageWithHashCode(localSeqNum, listEdit.toString().hashCode(), listEdit);
+    } else if (variant.equals(FTType.UUB)) {
+      return new AMessageWithSeqNumFromSequencer(localSeqNum, listEdit);
+    }
+    return null;
   }
 
-  public AMessageWithSeqNum retriveMessage(int identityHashCode) {
-    return hcm.remove(identityHashCode);
+  public void bufferMessage(ListEdit msg) {
+    hs.add(msg);
+  }
+
+  public void retriveMessage(ListEdit msg) {
+    hs.remove(msg);
   }
 
 }

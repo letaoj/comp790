@@ -5,11 +5,11 @@ import trace.echo.modular.OperationName;
 import trace.ft.MessageWithSequencerNumberReceived;
 import trace.ft.SentRequestReceived;
 import trace.im.ListEditReceived;
-import util.models.Hashcodetable;
 import util.session.CommunicatorSelector;
 import util.session.PeerMessageListener;
 import echo.modular.SimpleList;
 import ft.letao.AFTManager;
+import ft.letao.AMessageWithHashCode;
 import ft.letao.AMessageWithSeqNum;
 import ft.letao.AMessageWithSeqNumFromSequencer;
 import ft.letao.ASentRequest;
@@ -34,28 +34,40 @@ public class AListInCoupler<E> implements PeerMessageListener {
     } else if (message instanceof AMessageWithSeqNumFromSequencer) {
       processReceivedSeqNum((AMessageWithSeqNumFromSequencer) message, userName);
     } else if (message instanceof AMessageWithSeqNum) {
-      AMessageWithSeqNum msg = (AMessageWithSeqNum) message;
-      ListEdit listEdit = (ListEdit) ftManager.unwarp(msg);
-      MessageWithSequencerNumberReceived.newCase(userName, OperationName.ADD, listEdit.getIndex(),
-          listEdit.getElement(), listEdit.getList(), userName, this);
-      if (msg.getSeqNum() - 1 == ftManager.getGlobalSeqNum()) {
-        ftManager.incGlobal();
-      } else if (ftManager.getGlobalSeqNum() == msg.getSeqNum()) {
-        // Do nothing, duplicate message
-      } else {
-        ftManager.bufferMessage(System.identityHashCode(msg), msg);
-      }
-      // System.out.println(seqMessage.getMessage());
-      ftManager.addToHistory(listEdit);
-      processReceivedListEdit(listEdit, userName);
+      processReceivedMsgWithSeqNum((AMessageWithSeqNum) message, userName);
+    } else if (message instanceof AMessageWithHashCode) {
+      processReceivedMsgWithHashCode((AMessageWithHashCode) message, userName);
     }
+  }
+
+  protected void processReceivedMsgWithHashCode(AMessageWithHashCode message, String userName) {
+    ftManager.setAlgorithmStatus("MessageWithHashCode Received!");
+    ftManager.retriveMessage((ListEdit)message.getMessage());
+    processReceivedListEdit((ListEdit)message.getMessage(), userName);
   }
 
   protected void processReceivedSeqNum(AMessageWithSeqNumFromSequencer message, String userName) {
     if (!((ListEdit) message.getMessage()).getList().equals(tag)) {
       return;
     }
+    ftManager.setAlgorithmStatus("MessageFromSequencer Received!");
     ((AReplicatedSimpleList) list).UUBtotalOrderAdd(message);
+  }
+
+  protected void processReceivedMsgWithSeqNum(AMessageWithSeqNum msg, String userName) {
+    ListEdit listEdit = (ListEdit) msg.getMessage();
+    ftManager.setAlgorithmStatus("MessageWithSeqNum Received!");
+    MessageWithSequencerNumberReceived.newCase(userName, OperationName.ADD, listEdit.getIndex(),
+        listEdit.getElement(), listEdit.getList(), userName, this);
+    if (msg.getSeqNum() - 1 == ftManager.getGlobalSeqNum()) {
+      ftManager.incGlobal();
+    } else if (ftManager.getGlobalSeqNum() == msg.getSeqNum()) {
+      // Do nothing, duplicate message
+    } else {
+      ftManager.bufferMessage(listEdit);
+    }
+    ftManager.addToHistory(listEdit);
+    processReceivedListEdit(listEdit, userName);
   }
 
   protected void processReceivedSentRequest(ASentRequest<E> aSentRequest, String userName) {
@@ -64,7 +76,7 @@ public class AListInCoupler<E> implements PeerMessageListener {
     }
     SentRequestReceived.newCase(userName, OperationName.ADD, 0, aSentRequest.getListEdit()
         .getElement(), tag, userName, this);
-    ((AReplicatedSimpleList) list).UBtotalOrderAdd(aSentRequest);
+    ((AReplicatedSimpleList) list).processSentRequest(aSentRequest);
   }
 
   protected void processReceivedListEdit(ListEdit<E> aRemoteEdit, String aUserName) {
@@ -78,9 +90,6 @@ public class AListInCoupler<E> implements PeerMessageListener {
     } else if (aRemoteEdit.getOperationName().equals(OperationName.DELETE)) {
       ((AModifiedSimpleList) list).observableRemove(normalizedIndex(list, aRemoteEdit.getIndex()));
     }
-
-    // System.out.println(IMUtililties.remoteEcho(anInput, aUserName));
-
   }
 
   protected static int normalizedIndex(SimpleList aTopic, int index) {
